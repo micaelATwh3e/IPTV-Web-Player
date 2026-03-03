@@ -82,17 +82,6 @@ Download behavior:
 - User management: `/admin/users`
 - Playlist source/status: `/admin/playlist`
 
-## Security & Public GitHub
-
-This project includes `.gitignore` rules to avoid publishing local runtime/private files (playlist dumps/config/db).
-
-Before first public push, verify staged files:
-
-```bash
-git add -n .
-git status --short
-```
-
 ## Notes
 
 - This project is for streams you are authorized to access.
