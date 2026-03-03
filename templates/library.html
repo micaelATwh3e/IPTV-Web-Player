@@ -1,0 +1,98 @@
+{% extends "base.html" %}
+
+{% block content %}
+  {% if current_live_entry %}
+    <section class="hero">
+      <article class="card">
+        <h2>Currently Playing</h2>
+        <p>{{ current_live_entry.title }}</p>
+        <div class="live-banner-actions">
+          <a class="watch-btn" href="{{ url_for('player_live') }}">Open Player Page</a>
+          <a class="watch-btn" href="{{ url_for('proxy_stream_live') }}" target="_blank" rel="noopener">Open Live Stream</a>
+          <a class="watch-btn" href="{{ url_for('watch', entry_id=current_live_entry.id) }}">Play This Channel</a>
+          <form method="post" action="{{ url_for('stop_live') }}" class="inline-form">
+            <button type="submit" class="watch-btn stop-btn">Stop Stream</button>
+          </form>
+        </div>
+      </article>
+    </section>
+  {% endif %}
+
+  <section class="panel">
+    <div class="panel-head">
+      <h2>Library ({{ total }})</h2>
+      <form method="get" action="{{ url_for('library') }}" class="search-form">
+        <input type="hidden" name="type" value="{{ selected_type }}" />
+        <input type="hidden" name="region" value="{{ selected_region }}" />
+        <input type="hidden" name="folder" value="{{ selected_folder }}" />
+        <input type="text" name="q" value="{{ query }}" placeholder="Search title/group/url" />
+        <button type="submit">Search</button>
+      </form>
+    </div>
+
+    <nav class="tabs">
+      <a class="tab {{ 'active' if selected_type == 'tv' else '' }}" href="{{ url_for('library', type='tv', region=selected_region, folder=selected_folder, q=query) }}">
+        TV ({{ counts.get('tv', 0) }})
+      </a>
+      <a class="tab {{ 'active' if selected_type == 'movies' else '' }}" href="{{ url_for('library', type='movies', region=selected_region, folder=selected_folder, q=query) }}">
+        Movies ({{ counts.get('movies', 0) }})
+      </a>
+      <a class="tab {{ 'active' if selected_type == 'series' else '' }}" href="{{ url_for('library', type='series', region=selected_region, folder=selected_folder, q=query) }}">
+        Series ({{ counts.get('series', 0) }})
+      </a>
+    </nav>
+
+    <div class="folder-sections">
+      <details class="filter-menu">
+        <summary>Regions{% if selected_region != 'all' %}: {{ selected_region }}{% endif %}</summary>
+        <div class="tabs">
+          <a class="tab {{ 'active' if selected_region == 'all' else '' }}" href="{{ url_for('library', type=selected_type, region='all', folder=selected_folder, q=query) }}">
+            All
+          </a>
+          {% for region, count in regions %}
+            <a class="tab {{ 'active' if selected_region == region else '' }}" href="{{ url_for('library', type=selected_type, region=region, folder=selected_folder, q=query) }}">
+              {{ region }} ({{ count }})
+            </a>
+          {% endfor %}
+        </div>
+      </details>
+
+      <details class="filter-menu">
+        <summary>Types{% if selected_folder != 'all' %}: {{ selected_folder }}{% endif %}</summary>
+        <div class="tabs">
+          <a class="tab {{ 'active' if selected_folder == 'all' else '' }}" href="{{ url_for('library', type=selected_type, region=selected_region, folder='all', q=query) }}">
+            All
+          </a>
+          {% for folder, count in folders %}
+            <a class="tab {{ 'active' if selected_folder == folder else '' }}" href="{{ url_for('library', type=selected_type, region=selected_region, folder=folder, q=query) }}">
+              {{ folder }} ({{ count }})
+            </a>
+          {% endfor %}
+        </div>
+      </details>
+    </div>
+
+    {% if entries %}
+      <div class="grid">
+        {% for item in entries %}
+          <article class="card">
+            <div class="logo-wrap">
+              {% if item.tvg_logo %}
+                <img src="{{ item.tvg_logo }}" alt="{{ item.title }}" loading="lazy" referrerpolicy="no-referrer" />
+              {% else %}
+                <span class="logo-fallback">No Logo</span>
+              {% endif %}
+            </div>
+            <div class="content">
+              <h3>{{ item.title }}</h3>
+              <p>{{ item.group_title }}</p>
+              <a class="watch-btn" href="{{ url_for('watch', entry_id=item.id) }}">Watch</a>
+            </div>
+          </article>
+        {% endfor %}
+      </div>
+    {% else %}
+      <p class="empty">No streams in this section yet.</p>
+    {% endif %}
+  </section>
+{% endblock %}

@@ -1,0 +1,53 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>{{ title or 'IPTV Web Player' }}</title>
+  <link rel="stylesheet" href="{{ url_for('static', filename='styles.css') }}">
+</head>
+<body>
+  <header class="topbar">
+    <div class="container topbar-inner">
+      <div class="brand">
+        <h1><a href="{{ url_for('library') }}">IPTV Web Player</a></h1>
+        <span>M3U Plus • TV / Movies / Series</span>
+      </div>
+      <nav class="topnav">
+        {% if current_user %}
+          <a href="{{ url_for('library') }}">Library</a>
+          <a href="{{ url_for('player_live') }}">Player</a>
+          <a href="{{ url_for('account') }}">Account</a>
+          <a href="{{ url_for('proxy_stream_live') }}" target="_blank" rel="noopener">Live URL</a>
+          {% if current_user.role == 'admin' %}
+            <a href="{{ url_for('admin_users') }}">Users</a>
+            <a href="{{ url_for('admin_playlist') }}">Playlist</a>
+          {% endif %}
+          <form method="post" action="{{ url_for('stop_live') }}" class="inline-form">
+            <button type="submit" class="nav-stop-btn">Stop Stream</button>
+          </form>
+          <form method="post" action="{{ url_for('logout') }}" class="inline-form">
+            <button type="submit" class="nav-stop-btn">Logout ({{ current_user.username }})</button>
+          </form>
+        {% else %}
+          <a href="{{ url_for('login') }}">Login</a>
+        {% endif %}
+      </nav>
+    </div>
+  </header>
+
+  <main class="container">
+    {% with messages = get_flashed_messages(with_categories=true) %}
+      {% if messages %}
+        <div class="flash-wrap">
+          {% for category, message in messages %}
+            <div class="flash {{ category }}">{{ message }}</div>
+          {% endfor %}
+        </div>
+      {% endif %}
+    {% endwith %}
+
+    {% block content %}{% endblock %}
+  </main>
+</body>
+</html>

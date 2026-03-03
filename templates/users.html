@@ -1,0 +1,66 @@
+{% extends "base.html" %}
+
+{% block content %}
+  <section class="panel">
+    <div class="panel-head">
+      <h2>User Management</h2>
+    </div>
+
+    <form method="post" action="{{ url_for('admin_create_user') }}" class="user-form">
+      <div class="row">
+        <label for="username">Username</label>
+        <input id="username" name="username" type="text" required minlength="3" />
+      </div>
+
+      <div class="row">
+        <label for="password">Password</label>
+        <input id="password" name="password" type="password" required minlength="6" />
+      </div>
+
+      <div class="row">
+        <label for="role">Role</label>
+        <select id="role" name="role">
+          <option value="user">User</option>
+          <option value="admin">Admin</option>
+        </select>
+      </div>
+
+      <button type="submit">Create User</button>
+    </form>
+
+    <div class="table-wrap">
+      <table class="table">
+        <thead>
+          <tr>
+            <th>Username</th>
+            <th>Role</th>
+            <th>Created</th>
+            <th>Action</th>
+          </tr>
+        </thead>
+        <tbody>
+          {% for user in users %}
+            <tr>
+              <td>{{ user.username }}</td>
+              <td>{{ user.role }}</td>
+              <td>{{ user.created_at }}</td>
+              <td>
+                <form method="post" action="{{ url_for('admin_update_user_password', user_id=user.id) }}" class="inline-form admin-password-form">
+                  <input name="new_password" type="password" required minlength="6" placeholder="New password" />
+                  <button type="submit" class="watch-btn">Set Password</button>
+                </form>
+                {% if current_user and user.id != current_user.id %}
+                  <form method="post" action="{{ url_for('admin_delete_user', user_id=user.id) }}" class="inline-form">
+                    <button type="submit" class="delete-btn">Delete</button>
+                  </form>
+                {% else %}
+                  <span class="subtitle">Current user</span>
+                {% endif %}
+              </td>
+            </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+  </section>
+{% endblock %}

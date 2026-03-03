@@ -1,0 +1,47 @@
+{% extends "base.html" %}
+
+{% block content %}
+  <section class="panel">
+    <div class="panel-head">
+      <h2>Playlist Source</h2>
+    </div>
+
+    <p class="subtitle">Update playlist URL. Download runs in background and replaces old playlist only after successful download/parse.</p>
+
+    <form method="post" action="{{ url_for('admin_playlist_update') }}" class="user-form">
+      <div class="row">
+        <label for="playlist_url">Playlist URL</label>
+        <input id="playlist_url" name="playlist_url" type="url" value="{{ playlist_url }}" required />
+      </div>
+
+      <button type="submit">Save and Download</button>
+    </form>
+
+    <div class="status-box" id="playlist-status-box">
+      <p><strong>Status:</strong> <span id="playlist-status-running">{{ 'Running' if download_status.running else 'Idle' }}</span></p>
+      <p><strong>Message:</strong> <span id="playlist-status-message">{{ download_status.message or 'No recent activity' }}</span></p>
+      <p><strong>Started:</strong> <span id="playlist-status-started">{{ download_status.started_at or '-' }}</span></p>
+      <p><strong>Finished:</strong> <span id="playlist-status-finished">{{ download_status.finished_at or '-' }}</span></p>
+    </div>
+  </section>
+
+  <script>
+    async function pollPlaylistStatus() {
+      try {
+        const response = await fetch('/api/admin/playlist/status', { cache: 'no-store' });
+        if (!response.ok) return;
+        const payload = await response.json();
+        if (!payload || !payload.status) return;
+
+        const status = payload.status;
+        document.getElementById('playlist-status-running').textContent = status.running ? 'Running' : 'Idle';
+        document.getElementById('playlist-status-message').textContent = status.message || 'No recent activity';
+        document.getElementById('playlist-status-started').textContent = status.started_at || '-';
+        document.getElementById('playlist-status-finished').textContent = status.finished_at || '-';
+      } catch (_) {
+      }
+    }
+
+    setInterval(pollPlaylistStatus, 2500);
+  </script>
+{% endblock %}

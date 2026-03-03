@@ -1,0 +1,27 @@
+{% extends "base.html" %}
+
+{% block content %}
+  <section class="panel auth-panel">
+    <h2>Account</h2>
+    <p class="subtitle">Signed in as <strong>{{ user.username }}</strong> ({{ user.role }})</p>
+
+    <form method="post" action="{{ url_for('account_change_password') }}" class="auth-form">
+      <div class="row">
+        <label for="current_password">Current Password</label>
+        <input id="current_password" name="current_password" type="password" required autocomplete="current-password" />
+      </div>
+
+      <div class="row">
+        <label for="new_password">New Password</label>
+        <input id="new_password" name="new_password" type="password" required minlength="6" autocomplete="new-password" />
+      </div>
+
+      <div class="row">
+        <label for="confirm_password">Confirm New Password</label>
+        <input id="confirm_password" name="confirm_password" type="password" required minlength="6" autocomplete="new-password" />
+      </div>
+
+      <button type="submit">Update Password</button>
+    </form>
+  </section>
+{% endblock %}

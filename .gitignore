@@ -1,0 +1,36 @@
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.Python
+.pytest_cache/
+.mypy_cache/
+.coverage
+htmlcov/
+
+# Virtual environments
+.venv/
+venv/
+env/
+
+# IDE / OS
+.vscode/
+.idea/
+.DS_Store
+
+# Local runtime data
+users.db
+downloaded_playlists/
+*.db
+*.m3u
+*.json
+!*.example.json
+
+# Secrets / env
+.env
+.env.*
+.secret_key
+
+# Logs
+*.log

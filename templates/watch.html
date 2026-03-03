@@ -1,0 +1,183 @@
+{% extends "base.html" %}
+
+{% block content %}
+  <section class="panel">
+    <a class="back-link" href="{{ url_for('library', type=entry.category) }}">← Back to {{ entry.category|capitalize }}</a>
+    <h2 id="now-title">Now Watching: {{ entry.title }}</h2>
+    <p class="subtitle">{{ entry.group_title }}</p>
+
+    <div class="player-wrap">
+      <video id="live-player" controls autoplay playsinline muted></video>
+      <button id="reload-player" type="button" class="start-btn">Reload Player</button>
+      <p id="player-status" class="subtitle"></p>
+      <p class="player-error" id="player-error" hidden>
+        Browser playback failed for this stream format. Use the VLC URL below.
+      </p>
+    </div>
+
+    <div class="player-wrap">
+      <p class="subtitle">Use this live URL in VLC (Media → Open Network Stream):</p>
+      <input id="vlc-url" type="text" readonly value="{{ stream_url }}" />
+      <button id="copy-url" type="button" class="start-btn">Copy URL</button>
+      <p class="subtitle">Or run this command (1 minute buffering):</p>
+      <input id="vlc-command" type="text" readonly />
+      <button id="copy-command" type="button" class="start-btn">Copy VLC Command</button>
+    </div>
+
+    <details>
+      <summary>Stream details</summary>
+      <p><strong>Live Path:</strong> {{ stream_src }}</p>
+      <p><strong>Live URL:</strong> {{ stream_url }}</p>
+      <p><strong>Original Source:</strong> {{ entry.stream_url }}</p>
+    </details>
+  </section>
+
+  <script src="https://cdn.jsdelivr.net/npm/hls.js@1"></script>
+  <script src="https://cdn.jsdelivr.net/npm/mpegts.js@1.8.0/dist/mpegts.min.js"></script>
+
+  <script>
+    const player = document.getElementById('live-player');
+    const reloadPlayerButton = document.getElementById('reload-player');
+    const playerStatus = document.getElementById('player-status');
+    const playerError = document.getElementById('player-error');
+    const streamSrc = '{{ stream_src }}';
+    const originalStreamUrl = '{{ entry.stream_url }}'.toLowerCase();
+
+    let hlsInstance = null;
+    let mpegTsInstance = null;
+
+    function buildStreamUrl() {
+      const url = new URL(window.location.origin + streamSrc);
+      url.searchParams.set('_ts', Date.now().toString());
+      return url.toString();
+    }
+
+    function destroyPlayerInstances() {
+      if (hlsInstance) {
+        hlsInstance.destroy();
+        hlsInstance = null;
+      }
+
+      if (mpegTsInstance) {
+        mpegTsInstance.destroy();
+        mpegTsInstance = null;
+      }
+    }
+
+    async function startPlayback() {
+      destroyPlayerInstances();
+      playerError.hidden = true;
+      playerStatus.textContent = 'Connecting...';
+
+      const url = buildStreamUrl();
+      const isHls = originalStreamUrl.includes('.m3u8');
+
+      try {
+        if (isHls && window.Hls && Hls.isSupported()) {
+          playerStatus.textContent = 'Using HLS.js';
+          hlsInstance = new Hls({
+            liveSyncDuration: 3,
+            liveMaxLatencyDuration: 12,
+            enableWorker: true,
+          });
+          hlsInstance.loadSource(url);
+          hlsInstance.attachMedia(player);
+          hlsInstance.on(Hls.Events.MANIFEST_PARSED, () => {
+            player.muted = false;
+            player.play().catch(() => {});
+          });
+          hlsInstance.on(Hls.Events.ERROR, (_, data) => {
+            if (data && data.fatal) {
+              playerError.hidden = false;
+              playerStatus.textContent = 'Playback error';
+            }
+          });
+          return;
+        }
+
+        if (window.mpegts && mpegts.getFeatureList().mseLivePlayback) {
+          playerStatus.textContent = 'Using MPEG-TS player';
+          mpegTsInstance = mpegts.createPlayer({
+            type: 'mse',
+            isLive: true,
+            url,
+          });
+          mpegTsInstance.attachMediaElement(player);
+          mpegTsInstance.load();
+          player.muted = false;
+          player.play().catch(() => {});
+          return;
+        }
+
+        playerStatus.textContent = 'Using browser native player';
+        player.src = url;
+        player.muted = false;
+        await player.play();
+      } catch (_) {
+        playerStatus.textContent = 'Playback error';
+        playerError.hidden = false;
+      }
+    }
+
+    player.addEventListener('error', () => {
+      playerError.hidden = false;
+      playerStatus.textContent = 'Playback error';
+    });
+
+    reloadPlayerButton.addEventListener('click', () => {
+      startPlayback();
+    });
+
+    async function pollCurrentStream() {
+      try {
+        const response = await fetch('/api/live/current', { cache: 'no-store' });
+        if (!response.ok) {
+          return;
+        }
+
+        const payload = await response.json();
+        if (!payload || !payload.entry_id) {
+          return;
+        }
+
+        if (payload.entry_id !== '{{ entry.id }}') {
+          window.location.reload();
+        }
+      } catch (_) {
+      }
+    }
+
+    setInterval(pollCurrentStream, 2500);
+
+    const copyButton = document.getElementById('copy-url');
+    const input = document.getElementById('vlc-url');
+    const copyCommandButton = document.getElementById('copy-command');
+    const commandInput = document.getElementById('vlc-command');
+    commandInput.value = `vlc --network-caching=60000 "${input.value}"`;
+
+    async function copyText(value) {
+      try {
+        await navigator.clipboard.writeText(value);
+      } catch (_) {
+        const helper = document.createElement('textarea');
+        helper.value = value;
+        document.body.appendChild(helper);
+        helper.select();
+        document.execCommand('copy');
+        helper.remove();
+      }
+    }
+
+    copyButton.addEventListener('click', async () => {
+      await copyText(input.value);
+      copyButton.textContent = 'Copied URL';
+    });
+
+    copyCommandButton.addEventListener('click', async () => {
+      await copyText(commandInput.value);
+      copyCommandButton.textContent = 'Copied Command';
+    });
+
+    startPlayback();
+  </script>
+{% endblock %}
